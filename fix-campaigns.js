@@ -5,6 +5,8 @@ const prisma = new PrismaClient()
 async function updateCampaigns() {
     console.log('Updating existing campaigns...')
 
+
+
     try {
         // Get all campaigns
         const campaigns = await prisma.campaign.findMany()
