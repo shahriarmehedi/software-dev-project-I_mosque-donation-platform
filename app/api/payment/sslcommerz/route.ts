@@ -31,16 +31,17 @@ export async function GET(request: NextRequest) {
     }
 
     // SSLCommerz configuration
+    const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000'
     const sslCommerzData = {
       store_id: process.env.SSLCOMMERZ_STORE_ID,
       store_passwd: process.env.SSLCOMMERZ_STORE_PASSWORD,
       total_amount: amount,
       currency: 'BDT',
       tran_id: `TXN_${donationId}_${Date.now()}`,
-      success_url: `${process.env.NEXTAUTH_URL}/api/payment/success`,
-      fail_url: `${process.env.NEXTAUTH_URL}/api/payment/fail`,
-      cancel_url: `${process.env.NEXTAUTH_URL}/api/payment/cancel`,
-      ipn_url: `${process.env.NEXTAUTH_URL}/api/payment/ipn`,
+      success_url: `${baseUrl}/api/payment/success`,
+      fail_url: `${baseUrl}/api/payment/fail`,
+      cancel_url: `${baseUrl}/api/payment/cancel`,
+      ipn_url: `${baseUrl}/api/payment/ipn`,
       product_name: `Donation to ${donation.campaign.title}`,
       product_category: 'Donation',
       product_profile: 'general',
@@ -80,9 +81,12 @@ export async function GET(request: NextRequest) {
 
     // For demo purposes, redirect to a mock payment page
     // In production, you would POST to SSLCommerz and redirect to their gateway
-    return NextResponse.redirect(
-      `${process.env.NEXTAUTH_URL}/payment-demo?donationId=${donationId}&amount=${amount}&method=${method}`
-    )
+    const redirectUrl = new URL('/payment-demo', baseUrl)
+    redirectUrl.searchParams.set('donationId', donationId)
+    redirectUrl.searchParams.set('amount', amount)
+    redirectUrl.searchParams.set('method', method || 'CREDIT_CARD')
+    
+    return NextResponse.redirect(redirectUrl.toString())
 
   } catch (error) {
     console.error('Error processing payment:', error)

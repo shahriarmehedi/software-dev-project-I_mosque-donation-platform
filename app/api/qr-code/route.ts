@@ -15,7 +15,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Generate the full donation URL
-    const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000'
+    const baseUrl = process.env.NEXTAUTH_URL || 'https://mosque-donation-platform.shahriar.site'
     const donationUrl = url || `${baseUrl}/donate${campaignId ? `?campaign=${campaignId}` : ''}`
 
     // Generate QR code

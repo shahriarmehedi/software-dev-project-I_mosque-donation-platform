@@ -45,9 +45,13 @@ export async function POST(request: NextRequest) {
         })
 
         // Redirect to success page
-        return NextResponse.redirect(
-          `${process.env.NEXTAUTH_URL}/donation-success?id=${donationId}&amount=${amount}&method=${card_type}`
-        )
+        const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000'
+        const redirectUrl = new URL('/donation-success', baseUrl)
+        redirectUrl.searchParams.set('id', donationId)
+        redirectUrl.searchParams.set('amount', amount)
+        if (card_type) redirectUrl.searchParams.set('method', card_type)
+        
+        return NextResponse.redirect(redirectUrl.toString())
       } else {
         // Payment validation failed
         await prisma.donation.update({
@@ -55,9 +59,12 @@ export async function POST(request: NextRequest) {
           data: { status: 'FAILED' }
         })
 
-        return NextResponse.redirect(
-          `${process.env.NEXTAUTH_URL}/donation-failed?id=${donationId}&reason=validation_failed`
-        )
+        const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000'
+        const redirectUrl = new URL('/donation-failed', baseUrl)
+        redirectUrl.searchParams.set('id', donationId)
+        redirectUrl.searchParams.set('reason', 'validation_failed')
+        
+        return NextResponse.redirect(redirectUrl.toString())
       }
     } catch (validationError) {
       console.error('Payment validation error:', validationError)
@@ -68,15 +75,20 @@ export async function POST(request: NextRequest) {
         data: { status: 'FAILED' }
       })
 
-      return NextResponse.redirect(
-        `${process.env.NEXTAUTH_URL}/donation-failed?id=${donationId}&reason=validation_error`
-      )
+      const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000'
+      const redirectUrl = new URL('/donation-failed', baseUrl)
+      redirectUrl.searchParams.set('id', donationId)
+      redirectUrl.searchParams.set('reason', 'validation_error')
+      
+      return NextResponse.redirect(redirectUrl.toString())
     }
   } catch (error) {
     console.error('Error processing successful payment:', error)
-    return NextResponse.redirect(
-      `${process.env.NEXTAUTH_URL}/donation-failed?reason=processing_error`
-    )
+    const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000'
+    const redirectUrl = new URL('/donation-failed', baseUrl)
+    redirectUrl.searchParams.set('reason', 'processing_error')
+    
+    return NextResponse.redirect(redirectUrl.toString())
   }
 }
 
@@ -88,10 +100,15 @@ export async function GET(request: NextRequest) {
   const method = searchParams.get('method')
 
   if (donationId) {
-    return NextResponse.redirect(
-      `${process.env.NEXTAUTH_URL}/donation-success?id=${donationId}&amount=${amount}&method=${method}`
-    )
+    const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000'
+    const redirectUrl = new URL('/donation-success', baseUrl)
+    redirectUrl.searchParams.set('id', donationId)
+    if (amount) redirectUrl.searchParams.set('amount', amount)
+    if (method) redirectUrl.searchParams.set('method', method)
+    
+    return NextResponse.redirect(redirectUrl.toString())
   }
 
-  return NextResponse.redirect(`${process.env.NEXTAUTH_URL}/`)
+  const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000'
+  return NextResponse.redirect(baseUrl)
 }

@@ -88,7 +88,7 @@ export class SSLCommerzService {
   }
 
   async initiatePayment(paymentData: SSLCommerzPaymentData): Promise<SSLCommerzResponse> {
-    const endpoint = `${this.baseUrl}/gwprocess/v4/api.php`
+    const endpoint = `${this.baseUrl}/gwprocess/v3/api.php`
     
     const postData = {
       store_id: this.config.storeId,

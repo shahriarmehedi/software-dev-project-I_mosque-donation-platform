@@ -10,6 +10,14 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const { campaignId, amount, donorName, donorPhone, donorEmail, paymentMethod } = body
 
+    // Log the request for debugging
+    console.log('Donation request:', { campaignId, amount, paymentMethod })
+    console.log('Environment check:', {
+      NEXTAUTH_URL: process.env.NEXTAUTH_URL,
+      SSLCOMMERZ_STORE_ID: process.env.SSLCOMMERZ_STORE_ID ? 'SET' : 'NOT SET',
+      SSLCOMMERZ_IS_LIVE: process.env.SSLCOMMERZ_IS_LIVE
+    })
+
     // Validate required fields
     if (!campaignId || !amount || amount <= 0 || !paymentMethod) {
       return NextResponse.json(
@@ -46,6 +54,20 @@ export async function POST(request: NextRequest) {
       }
     })
 
+    // Get base URL with validation
+    const baseUrl = process.env.NEXTAUTH_URL || 'https://mosque-donation-platform.shahriar.site'
+    
+    // Validate URL format
+    try {
+      new URL(baseUrl)
+    } catch (urlError) {
+      console.error('Invalid base URL:', baseUrl, urlError)
+      return NextResponse.json(
+        { success: false, error: 'Invalid base URL configuration' },
+        { status: 500 }
+      )
+    }
+
     // Initialize SSLCommerz payment
     try {
       // Check if SSLCommerz is properly configured
@@ -55,7 +77,6 @@ export async function POST(request: NextRequest) {
 
       if (!isSSLConfigured) {
         // Demo mode - redirect to demo payment page
-        const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000'
         const demoTransactionId = `DEMO_${donation.id}_${Date.now()}`
         
         await prisma.donation.update({
@@ -73,7 +94,6 @@ export async function POST(request: NextRequest) {
 
       // Production SSLCommerz integration
       const sslcommerz = getSSLCommerzService()
-      const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000'
       const transactionId = sslcommerz.generateTransactionId(donation.id)
 
       // Update donation with transaction ID
@@ -133,7 +153,6 @@ export async function POST(request: NextRequest) {
       console.error('SSLCommerz error:', sslError)
       
       // If SSLCommerz fails, fallback to demo mode
-      const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000'
       const demoTransactionId = `DEMO_${donation.id}_${Date.now()}`
       
       await prisma.donation.update({

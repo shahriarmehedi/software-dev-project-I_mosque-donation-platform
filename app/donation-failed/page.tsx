@@ -1,16 +1,16 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import { XCircle, Home, RefreshCw, AlertTriangle } from 'lucide-react'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 
-export default function DonationFailedPage() {
+function DonationFailedContent() {
     const searchParams = useSearchParams()
-    const donationId = searchParams.get('id')
-    const error = searchParams.get('error')
-    const amount = searchParams.get('amount')
-    const method = searchParams.get('method')
+    const donationId = searchParams?.get('id') || null
+    const error = searchParams?.get('error') || null
+    const amount = searchParams?.get('amount') || null
+    const method = searchParams?.get('method') || null
     const [updating, setUpdating] = useState(true)
 
     const isDemo = error === 'demo_mode'
@@ -141,5 +141,17 @@ export default function DonationFailedPage() {
                 </div>
             </div>
         </div>
+    )
+}
+
+export default function DonationFailedPage() {
+    return (
+        <Suspense fallback={
+            <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+                <div className="animate-spin rounded-full h-12 w-12 border-4 border-gray-300 border-t-gray-900"></div>
+            </div>
+        }>
+            <DonationFailedContent />
+        </Suspense>
     )
 }

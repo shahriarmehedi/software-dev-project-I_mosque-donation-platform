@@ -7,6 +7,10 @@ const nextConfig = {
                 hostname: '**',
             },
             {
+                protocol: 'https',
+                hostname: 'mosque-donation-platform.shahriar.site',
+            },
+            {
                 protocol: 'http',
                 hostname: 'localhost',
                 port: '3000',

@@ -22,15 +22,20 @@ export async function POST(request: NextRequest) {
     }
 
     // Redirect to failure page with cancellation message
-    return NextResponse.redirect(
-      `${process.env.NEXTAUTH_URL}/donation-failed?id=${donationId}&reason=cancelled`
-    )
+    const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000'
+    const redirectUrl = new URL('/donation-failed', baseUrl)
+    if (donationId) redirectUrl.searchParams.set('id', donationId)
+    redirectUrl.searchParams.set('reason', 'cancelled')
+    
+    return NextResponse.redirect(redirectUrl.toString())
 
   } catch (error) {
     console.error('Error processing cancelled payment:', error)
-    return NextResponse.redirect(
-      `${process.env.NEXTAUTH_URL}/donation-failed?reason=processing_error`
-    )
+    const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000'
+    const redirectUrl = new URL('/donation-failed', baseUrl)
+    redirectUrl.searchParams.set('reason', 'processing_error')
+    
+    return NextResponse.redirect(redirectUrl.toString())
   }
 }
 
@@ -50,7 +55,10 @@ export async function GET(request: NextRequest) {
     }
   }
 
-  return NextResponse.redirect(
-    `${process.env.NEXTAUTH_URL}/donation-failed?id=${donationId}&reason=cancelled`
-  )
+  const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000'
+  const redirectUrl = new URL('/donation-failed', baseUrl)
+  if (donationId) redirectUrl.searchParams.set('id', donationId)
+  redirectUrl.searchParams.set('reason', 'cancelled')
+  
+  return NextResponse.redirect(redirectUrl.toString())
 }

@@ -298,3 +298,37 @@ If you encounter "Function Runtimes must have a valid version" error:
    - SSLCOMMERZ_STORE_PASSWORD
    - SSLCOMMERZ_IS_LIVE
    - NEXT_PUBLIC_APP_URL
+
+# Production URL Updates
+
+## SSLCommerz Configuration Applied
+
+Your SSLCommerz sandbox credentials have been configured:
+
+```
+Store ID: mosqu6873818753acb
+Store Password: mosqu6873818753acb@ssl
+Store Name: testmosquyque
+Registered URL: https://mosque-donation-platform.shahriar.site
+Session API: https://sandbox.sslcommerz.com/gwprocess/v3/api.php
+Validation API: https://sandbox.sslcommerz.com/validator/api/validationserverAPI.php
+Merchant Panel: https://sandbox.sslcommerz.com/manage/
+```
+
+## Environment Variables for Production
+
+Make sure to set these environment variables in your Vercel dashboard:
+
+```
+NEXTAUTH_URL=https://mosque-donation-platform.shahriar.site
+NEXT_PUBLIC_APP_URL=https://mosque-donation-platform.shahriar.site
+DATABASE_URL=your-mongodb-atlas-connection-string
+JWT_SECRET=your-super-secret-jwt-key-at-least-32-characters-long
+SSLCOMMERZ_STORE_ID=mosqu6873818753acb
+SSLCOMMERZ_STORE_PASSWORD=mosqu6873818753acb@ssl
+SSLCOMMERZ_IS_LIVE=false
+NEXT_PUBLIC_APP_NAME=Mosque Donation System
+NEXT_PUBLIC_MOSQUE_NAME=Central Mosque
+```
+
+**Important**: Keep `SSLCOMMERZ_IS_LIVE=false` for sandbox testing. Change to `true` only when you get production credentials from SSLCommerz.

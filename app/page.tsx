@@ -5,6 +5,7 @@ import { QrCode, Heart, Users, Target, MapPin, Phone, Mail, Globe, Facebook, Twi
 import Link from 'next/link'
 import { useApp } from './contexts/AppContext'
 import ThemeLanguageToggle from './components/ThemeLanguageToggle'
+import DonationQRCode from './components/DonationQRCode'
 
 interface Campaign {
     id: string
@@ -152,14 +153,21 @@ export default function HomePage() {
 
                 {/* QR Code Section */}
                 <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-8 mb-8 text-center">
-                    <div className="inline-flex items-center justify-center w-28 h-28 bg-gray-100 dark:bg-gray-700 rounded-full mb-4">
-                        <QrCode className="w-20 h-20 text-gray-700 dark:text-gray-300" />
+                    <div className="inline-flex items-center justify-center w-48 h-48 bg-white rounded-lg mb-4 p-4 border border-gray-200">
+                        <DonationQRCode
+                            url="https://mosque-donation-platform.shahriar.site/donate"
+                            size={180}
+                            className="rounded"
+                        />
                     </div>
                     <h3 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-2">
                         {t('scan.donate')}
                     </h3>
-                    <p className="text-gray-600 dark:text-gray-300 mb-6">
+                    <p className="text-gray-600 dark:text-gray-300 mb-2">
                         {t('scan.description')}
+                    </p>
+                    <p className="text-sm text-blue-600 dark:text-blue-400 mb-6 font-mono">
+                        https://mosque-donation-platform.shahriar.site/donate
                     </p>
                     {settings?.minimumDonationAmount && (
                         <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
