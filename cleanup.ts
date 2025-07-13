@@ -10,6 +10,7 @@ async function cleanup() {
     const deletedDonations = await prisma.donation.deleteMany({})
     console.log(`✅ Deleted ${deletedDonations.count} existing donations`)
 
+    
     console.log('🎉 Cleanup completed successfully!')
   } catch (error) {
     console.error('❌ Error during cleanup:', error)
