@@ -262,3 +262,39 @@ Update your SSLCommerz account with production URLs:
    - Track response times
    - Monitor error rates
    - Set up alerts for issues
+
+## Vercel Runtime Error Fix
+
+If you encounter "Function Runtimes must have a valid version" error:
+
+1. **Simplified vercel.json Configuration**
+
+   ```json
+   {
+     "framework": "nextjs",
+     "buildCommand": "npm run build",
+     "installCommand": "npm install",
+     "env": {
+       "NEXT_PUBLIC_APP_NAME": "Mosque Donation System",
+       "NEXT_PUBLIC_MOSQUE_NAME": "Central Mosque"
+     }
+   }
+   ```
+
+2. **Node.js Version in package.json**
+
+   ```json
+   {
+     "engines": {
+       "node": ">=18.17.0"
+     }
+   }
+   ```
+
+3. **Environment Variables Setup in Vercel Dashboard**
+   - DATABASE_URL
+   - JWT_SECRET
+   - SSLCOMMERZ_STORE_ID
+   - SSLCOMMERZ_STORE_PASSWORD
+   - SSLCOMMERZ_IS_LIVE
+   - NEXT_PUBLIC_APP_URL
