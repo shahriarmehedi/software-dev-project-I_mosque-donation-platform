@@ -1,0 +1,97 @@
+import { NextRequest, NextResponse } from 'next/server'
+import { PrismaClient } from '@prisma/client'
+import { getSSLCommerzService } from '@/lib/sslcommerz'
+
+const prisma = new PrismaClient()
+
+export async function POST(request: NextRequest) {
+  try {
+    const formData = await request.formData()
+    const val_id = formData.get('val_id') as string
+    const tran_id = formData.get('tran_id') as string
+    const amount = formData.get('amount') as string
+    const card_type = formData.get('card_type') as string
+    const store_amount = formData.get('store_amount') as string
+    const bank_tran_id = formData.get('bank_tran_id') as string
+    const value_a = formData.get('value_a') as string // donation ID
+    const value_b = formData.get('value_b') as string // campaign ID
+
+    const donationId = value_a
+
+    if (!donationId || !val_id || !tran_id || !amount) {
+      return NextResponse.json(
+        { success: false, error: 'Invalid payment data' },
+        { status: 400 }
+      )
+    }
+
+    try {
+      // Validate payment with SSLCommerz
+      const sslcommerz = getSSLCommerzService()
+      const validationResult = await sslcommerz.validatePayment(val_id, tran_id, amount)
+
+      if (validationResult.status === 'VALID') {
+        // Update donation status to completed
+        const donation = await prisma.donation.update({
+          where: { id: donationId },
+          data: {
+            status: 'COMPLETED',
+            transactionId: tran_id,
+            bankTranId: bank_tran_id
+          },
+          include: {
+            campaign: true
+          }
+        })
+
+        // Redirect to success page
+        return NextResponse.redirect(
+          `${process.env.NEXTAUTH_URL}/donation-success?id=${donationId}&amount=${amount}&method=${card_type}`
+        )
+      } else {
+        // Payment validation failed
+        await prisma.donation.update({
+          where: { id: donationId },
+          data: { status: 'FAILED' }
+        })
+
+        return NextResponse.redirect(
+          `${process.env.NEXTAUTH_URL}/donation-failed?id=${donationId}&reason=validation_failed`
+        )
+      }
+    } catch (validationError) {
+      console.error('Payment validation error:', validationError)
+      
+      // Mark donation as failed
+      await prisma.donation.update({
+        where: { id: donationId },
+        data: { status: 'FAILED' }
+      })
+
+      return NextResponse.redirect(
+        `${process.env.NEXTAUTH_URL}/donation-failed?id=${donationId}&reason=validation_error`
+      )
+    }
+  } catch (error) {
+    console.error('Error processing successful payment:', error)
+    return NextResponse.redirect(
+      `${process.env.NEXTAUTH_URL}/donation-failed?reason=processing_error`
+    )
+  }
+}
+
+// Handle GET requests for testing
+export async function GET(request: NextRequest) {
+  const { searchParams } = new URL(request.url)
+  const donationId = searchParams.get('id')
+  const amount = searchParams.get('amount')
+  const method = searchParams.get('method')
+
+  if (donationId) {
+    return NextResponse.redirect(
+      `${process.env.NEXTAUTH_URL}/donation-success?id=${donationId}&amount=${amount}&method=${method}`
+    )
+  }
+
+  return NextResponse.redirect(`${process.env.NEXTAUTH_URL}/`)
+}

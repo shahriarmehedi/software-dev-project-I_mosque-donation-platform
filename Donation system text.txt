@@ -1,0 +1,76 @@
+Mosque Donation Management System
+Product Requirements Document (PRD)
+Submitted by: Md. Shahriar Mehedi
+Course: CSE 2100 - Software Development Project I
+Supervisor: Md. Fahim Faisal
+
+1. Project Overview
+This project proposes the development of a Mosque Donation Management System that streamlines the process of collecting and managing donations for a single mosque. Visitors will be able to donate by scanning a QR code on-site, redirecting them to a web-based interface that supports bKash and Nagad, Bangladesh’s most popular mobile financial services.
+An admin dashboard will allow mosque authorities to monitor, manage, and analyze donation data through a secure web interface.
+
+2. Problem Statement
+Traditional donation boxes offer no transparency or security and provide no structured audit trail. As digital payments become more common, especially among the younger generation, there's a growing need for a simple, secure, and accountable donation system.
+
+3. Goals & Objectives
+- Offer a mobile-friendly donation interface through QR code scanning
+- Support seamless digital payment via bKash/Nagad
+- Provide mosque admins with secure access to donation logs and analytics
+- Build a lightweight system focused on a single mosque, with no user login required for donors
+
+
+
+4. Key Features
+Visitor (Donation Interface)
+Scan QR code → Redirects to donation page
+Enter donation amount (preset options + custom)
+Redirect to payment method (sslCommerze)
+Show confirmation page with basic transaction reference
+
+
+Admin (Dashboard)
+- Admin login with JWT + HttpOnly cookie authentication
+- View donations list with filters (date, amount, payment method)
+- See summary stats (daily, monthly, all-time total)
+- Export donation history as CSV
+- Update donation QR or account numbers (bKash/Nagad)
+- Manage basic site info (mosque name, logo, banner)
+- Post donation reason for each campaign (Reason for fund collection)
+- Different types of donation campaigns will be there, visitors can choose one and pay
+
+
+
+5. User Flow Diagram
+Visitor Flow
+ Scan QR → Donation Form → Choose amount & payment → Redirect to payment app → Back to confirmation page
+Admin Flow
+ Login → Dashboard → All campaigns → View donation logs/Post new campaign → Export or update settings
+
+6. Technology Stack
+Layer
+Technology
+Frontend
+Next.js Latest
+Backend
+Next.js API Routes (Next.js)
+Database
+MongoDB atlas (with Prisma ORM)
+Authentication
+JWT with HttpOnly cookies
+Deployment
+Vercel (Frontend + API)
+Payments
+SSLCommerze
+
+
+7. Non-Functional Requirements
+Mobile-first, responsive design
+Lightweight, fast-loading pages
+Secure admin authentication with password hashing
+Simple, intuitive modern black-and-white UI for both donors and admin
+Data stored with proper timestamps and filterable views
+Donation export available as CSV
+
+
+System should work with poor internet or slow devices (lightweight design)
+
+  

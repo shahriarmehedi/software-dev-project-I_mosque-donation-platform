@@ -1,0 +1,124 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+    provider = "prisma-client-js"
+}
+
+datasource db {
+    provider = "mongodb"
+    url      = env("DATABASE_URL")
+}
+
+model Admin {
+    id        String   @id @default(auto()) @map("_id") @db.ObjectId
+    email     String   @unique
+    password  String
+    name      String
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    @@map("admins")
+}
+
+model Campaign {
+    id           String     @id @default(auto()) @map("_id") @db.ObjectId
+    title        String
+    description  String
+    targetAmount Float
+    raisedAmount Float      @default(0)
+    imageUrl     String?
+    isActive     Boolean    @default(true)
+    startDate    DateTime   @default(now())
+    endDate      DateTime?
+    createdAt    DateTime   @default(now())
+    updatedAt    DateTime   @updatedAt
+    donations    Donation[]
+
+    @@map("campaigns")
+}
+
+model Donation {
+    id            String         @id @default(auto()) @map("_id") @db.ObjectId
+    amount        Float
+    donorPhone    String?
+    donorName     String?
+    donorEmail    String?
+    paymentMethod PaymentMethod
+    transactionId String?
+    sslSessionId  String? // SSLCommerz session ID
+    bankTranId    String? // Bank transaction ID from SSLCommerz
+    status        DonationStatus @default(PENDING)
+    campaignId    String         @db.ObjectId
+    campaign      Campaign       @relation(fields: [campaignId], references: [id])
+    createdAt     DateTime       @default(now())
+    updatedAt     DateTime       @updatedAt
+
+    @@map("donations")
+}
+
+model SiteSettings {
+    id           String  @id @default(auto()) @map("_id") @db.ObjectId
+    // Basic Info
+    mosqueName   String  @default("Baitul Mukaram Mosque")
+    description  String  @default("A community mosque serving the local Islamic community")
+    address      String  @default("Dhaka, Bangladesh")
+    contactPhone String  @default("+880 1234 567890")
+    contactEmail String  @default("info@mosque.com")
+    website      String  @default("https://mosque.com")
+    logoUrl      String?
+    bannerUrl    String?
+
+    // Payment Settings
+    sslcommerzStoreId   String?
+    sslcommerzStorePass String?
+    sslcommerzIsLive    Boolean @default(false)
+    sslcommerzEnabled   Boolean @default(true)
+    bankTransferEnabled Boolean @default(true)
+    bankAccountName     String  @default("Mosque Fund")
+    bankAccountNumber   String?
+    bankName            String?
+    bankRoutingNumber   String?
+
+    // Social Media
+    facebookUrl  String?
+    twitterUrl   String?
+    instagramUrl String?
+    youtubeUrl   String?
+
+    // Donation Settings
+    minimumDonationAmount   Float   @default(10)
+    defaultAmounts          String  @default("50,100,500,1000,5000") // comma-separated
+    allowAnonymousDonations Boolean @default(true)
+    requirePhoneNumber      Boolean @default(false)
+    requireEmailAddress     Boolean @default(false)
+
+    // Appearance
+    primaryColor        String  @default("#1f2937")
+    secondaryColor      String  @default("#059669")
+    enableNotifications Boolean @default(true)
+
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    @@map("site_settings")
+}
+
+enum PaymentMethod {
+    CREDIT_CARD
+    DEBIT_CARD
+    INTERNET_BANKING
+    MOBILE_BANKING
+    DIGITAL_WALLET
+    CASH
+    BANK_TRANSFER
+    CHECK
+    OTHER
+}
+
+enum DonationStatus {
+    PENDING
+    COMPLETED
+    FAILED
+    CANCELLED
+}
