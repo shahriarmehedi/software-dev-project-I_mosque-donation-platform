@@ -5,6 +5,7 @@ import { XCircle, Home, RefreshCw, AlertTriangle } from 'lucide-react'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 
+
 function DonationFailedContent() {
     const searchParams = useSearchParams()
     const donationId = searchParams?.get('id') || null
