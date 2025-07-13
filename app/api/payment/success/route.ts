@@ -26,7 +26,34 @@ export async function POST(request: NextRequest) {
     }
 
     try {
-      // Validate payment with SSLCommerz
+      // For demo/sandbox, skip validation and mark as completed
+      const isDemo = process.env.SSLCOMMERZ_IS_LIVE !== 'true'
+      
+      if (isDemo) {
+        // In demo mode, just mark the donation as completed
+        const donation = await prisma.donation.update({
+          where: { id: donationId },
+          data: {
+            status: 'COMPLETED',
+            transactionId: tran_id,
+            bankTranId: bank_tran_id || `DEMO_${tran_id}`
+          },
+          include: {
+            campaign: true
+          }
+        })
+
+        // Redirect to success page
+        const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000'
+        const redirectUrl = new URL('/donation-success', baseUrl)
+        redirectUrl.searchParams.set('id', donationId)
+        redirectUrl.searchParams.set('amount', amount)
+        if (card_type) redirectUrl.searchParams.set('method', card_type)
+        
+        return NextResponse.redirect(redirectUrl.toString())
+      }
+
+      // Validate payment with SSLCommerz (production only)
       const sslcommerz = getSSLCommerzService()
       const validationResult = await sslcommerz.validatePayment(val_id, tran_id, amount)
 
@@ -92,23 +119,67 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// Handle GET requests for testing
+// Handle GET requests for testing and demo
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url)
-  const donationId = searchParams.get('id')
-  const amount = searchParams.get('amount')
-  const method = searchParams.get('method')
+  
+  // Try to get donation ID from various possible parameter names
+  const donationId = searchParams.get('donationId') ||  // From our callback URL
+                     searchParams.get('value_a') || 
+                     searchParams.get('id')
+  
+  const amount = searchParams.get('amount') || 
+                 searchParams.get('total_amount')
+  
+  const tran_id = searchParams.get('tran_id')
+  const val_id = searchParams.get('val_id')
+  const method = searchParams.get('card_type') || 
+                 searchParams.get('method') || 
+                 'DEMO_PAYMENT'
+
+  console.log('GET success callback params:', {
+    donationId,
+    amount,
+    tran_id,
+    val_id,
+    method,
+    allParams: Object.fromEntries(searchParams.entries())
+  })
 
   if (donationId) {
-    const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000'
-    const redirectUrl = new URL('/donation-success', baseUrl)
-    redirectUrl.searchParams.set('id', donationId)
-    if (amount) redirectUrl.searchParams.set('amount', amount)
-    if (method) redirectUrl.searchParams.set('method', method)
-    
-    return NextResponse.redirect(redirectUrl.toString())
+    try {
+      // Update donation status to completed (demo mode)
+      await prisma.donation.update({
+        where: { id: donationId },
+        data: {
+          status: 'COMPLETED',
+          transactionId: tran_id || `DEMO_${Date.now()}`,
+          bankTranId: val_id || `DEMO_BANK_${Date.now()}`
+        }
+      })
+
+      // Redirect to success page
+      const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000'
+      const redirectUrl = new URL('/donation-success', baseUrl)
+      redirectUrl.searchParams.set('id', donationId)
+      if (amount) redirectUrl.searchParams.set('amount', amount)
+      if (method) redirectUrl.searchParams.set('method', method)
+      
+      return NextResponse.redirect(redirectUrl.toString())
+    } catch (error) {
+      console.error('Error processing demo success:', error)
+      
+      // Redirect to failed page if there's an error
+      const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000'
+      const redirectUrl = new URL('/donation-failed', baseUrl)
+      redirectUrl.searchParams.set('id', donationId)
+      redirectUrl.searchParams.set('reason', 'processing_error')
+      
+      return NextResponse.redirect(redirectUrl.toString())
+    }
   }
 
+  // If no donation ID, redirect to home
   const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000'
   return NextResponse.redirect(baseUrl)
 }

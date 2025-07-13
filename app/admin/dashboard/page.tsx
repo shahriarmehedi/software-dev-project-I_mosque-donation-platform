@@ -13,7 +13,9 @@ import {
     Eye,
     Filter,
     Target,
-    LogOut
+    LogOut,
+    ChevronLeft,
+    ChevronRight
 } from 'lucide-react'
 
 interface DashboardStats {
@@ -36,6 +38,13 @@ interface Donation {
     }
 }
 
+interface PaginationInfo {
+    total: number
+    page: number
+    limit: number
+    totalPages: number
+}
+
 export default function AdminDashboard() {
     const router = useRouter()
     const [stats, setStats] = useState<DashboardStats>({
@@ -47,16 +56,24 @@ export default function AdminDashboard() {
     const [donations, setDonations] = useState<Donation[]>([])
     const [loading, setLoading] = useState(true)
     const [filter, setFilter] = useState('all')
+    const [currentPage, setCurrentPage] = useState(1)
+    const [pagination, setPagination] = useState<PaginationInfo>({
+        total: 0,
+        page: 1,
+        limit: 10,
+        totalPages: 0
+    })
 
     useEffect(() => {
         fetchDashboardData()
-    }, [])
+    }, [currentPage, filter])
 
     const fetchDashboardData = async () => {
         try {
+            setLoading(true)
             const [statsRes, donationsRes] = await Promise.all([
                 fetch('/api/admin/stats'),
-                fetch('/api/admin/donations')
+                fetch(`/api/admin/donations?page=${currentPage}&limit=${pagination.limit}&status=${filter !== 'all' ? filter : ''}`)
             ])
 
             if (statsRes.ok) {
@@ -67,6 +84,7 @@ export default function AdminDashboard() {
             if (donationsRes.ok) {
                 const donationsData = await donationsRes.json()
                 setDonations(donationsData.donations)
+                setPagination(donationsData.pagination)
             }
         } catch (error) {
             console.error('Error fetching dashboard data:', error)
@@ -84,30 +102,50 @@ export default function AdminDashboard() {
         }
     }
 
-    const exportDonations = () => {
-        // Simple CSV export
-        const headers = ['Date', 'Amount', 'Donor', 'Phone', 'Method', 'Campaign', 'Status']
-        const csvData = donations.map(d => [
-            new Date(d.createdAt).toLocaleDateString(),
-            d.amount,
-            d.donorName || 'Anonymous',
-            d.donorPhone || '',
-            d.paymentMethod,
-            d.campaign.title,
-            d.status
-        ])
+    const exportDonations = async () => {
+        try {
+            // Fetch all donations for export (without pagination)
+            const response = await fetch('/api/admin/donations?export=true')
+            if (!response.ok) return
 
-        const csvContent = [headers, ...csvData]
-            .map(row => row.map(field => `"${field}"`).join(','))
-            .join('\n')
+            const data = await response.json()
+            const allDonations = data.donations
 
-        const blob = new Blob([csvContent], { type: 'text/csv' })
-        const url = URL.createObjectURL(blob)
-        const a = document.createElement('a')
-        a.href = url
-        a.download = `donations-${new Date().toISOString().split('T')[0]}.csv`
-        a.click()
-        URL.revokeObjectURL(url)
+            // Simple CSV export
+            const headers = ['Date', 'Amount', 'Donor', 'Phone', 'Method', 'Campaign', 'Status']
+            const csvData = allDonations.map((d: Donation) => [
+                new Date(d.createdAt).toLocaleDateString(),
+                d.amount,
+                d.donorName || 'Anonymous',
+                d.donorPhone || '',
+                d.paymentMethod,
+                d.campaign.title,
+                d.status
+            ])
+
+            const csvContent = [headers, ...csvData]
+                .map(row => row.map((field: any) => `"${field}"`).join(','))
+                .join('\n')
+
+            const blob = new Blob([csvContent], { type: 'text/csv' })
+            const url = URL.createObjectURL(blob)
+            const a = document.createElement('a')
+            a.href = url
+            a.download = `donations-${new Date().toISOString().split('T')[0]}.csv`
+            a.click()
+            URL.revokeObjectURL(url)
+        } catch (error) {
+            console.error('Export error:', error)
+        }
+    }
+
+    const handleFilterChange = (newFilter: string) => {
+        setFilter(newFilter)
+        setCurrentPage(1) // Reset to first page when filter changes
+    }
+
+    const handlePageChange = (newPage: number) => {
+        setCurrentPage(newPage)
     }
 
     const filteredDonations = donations.filter(d => {
@@ -210,7 +248,7 @@ export default function AdminDashboard() {
                             <div className="flex space-x-3">
                                 <select
                                     value={filter}
-                                    onChange={(e) => setFilter(e.target.value)}
+                                    onChange={(e) => handleFilterChange(e.target.value)}
                                     className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gray-900"
                                 >
                                     <option value="all">All Status</option>
@@ -254,7 +292,7 @@ export default function AdminDashboard() {
                                 </tr>
                             </thead>
                             <tbody className="bg-white divide-y divide-gray-200">
-                                {filteredDonations.map((donation) => (
+                                {donations.map((donation) => (
                                     <tr key={donation.id} className="hover:bg-gray-50">
                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                                             {new Date(donation.createdAt).toLocaleDateString()}
@@ -287,9 +325,70 @@ export default function AdminDashboard() {
                         </table>
                     </div>
 
-                    {filteredDonations.length === 0 && (
+                    {donations.length === 0 && !loading && (
                         <div className="p-8 text-center text-gray-500">
                             No donations found
+                        </div>
+                    )}
+
+                    {/* Pagination */}
+                    {pagination.totalPages > 1 && (
+                        <div className="px-6 py-4 border-t border-gray-200">
+                            <div className="flex items-center justify-between">
+                                <div className="text-sm text-gray-600">
+                                    Showing {((currentPage - 1) * pagination.limit) + 1} to {Math.min(currentPage * pagination.limit, pagination.total)} of {pagination.total} results
+                                </div>
+                                <div className="flex items-center space-x-2">
+                                    <button
+                                        onClick={() => handlePageChange(currentPage - 1)}
+                                        disabled={currentPage === 1}
+                                        className={`px-3 py-1 rounded-lg text-sm font-medium ${currentPage === 1
+                                                ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                                                : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
+                                            }`}
+                                    >
+                                        <ChevronLeft className="w-4 h-4" />
+                                    </button>
+
+                                    {/* Page numbers */}
+                                    {Array.from({ length: Math.min(5, pagination.totalPages) }, (_, i) => {
+                                        let pageNumber;
+                                        if (pagination.totalPages <= 5) {
+                                            pageNumber = i + 1;
+                                        } else if (currentPage <= 3) {
+                                            pageNumber = i + 1;
+                                        } else if (currentPage >= pagination.totalPages - 2) {
+                                            pageNumber = pagination.totalPages - 4 + i;
+                                        } else {
+                                            pageNumber = currentPage - 2 + i;
+                                        }
+
+                                        return (
+                                            <button
+                                                key={pageNumber}
+                                                onClick={() => handlePageChange(pageNumber)}
+                                                className={`px-3 py-1 rounded-lg text-sm font-medium ${currentPage === pageNumber
+                                                        ? 'bg-gray-900 text-white'
+                                                        : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
+                                                    }`}
+                                            >
+                                                {pageNumber}
+                                            </button>
+                                        );
+                                    })}
+
+                                    <button
+                                        onClick={() => handlePageChange(currentPage + 1)}
+                                        disabled={currentPage === pagination.totalPages}
+                                        className={`px-3 py-1 rounded-lg text-sm font-medium ${currentPage === pagination.totalPages
+                                                ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                                                : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
+                                            }`}
+                                    >
+                                        <ChevronRight className="w-4 h-4" />
+                                    </button>
+                                </div>
+                            </div>
                         </div>
                     )}
                 </div>

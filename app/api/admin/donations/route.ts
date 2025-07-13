@@ -8,7 +8,51 @@ export async function GET(request: NextRequest) {
   try {
     requireAdmin(request)
 
+    const { searchParams } = new URL(request.url)
+    const page = parseInt(searchParams.get('page') || '1')
+    const limit = parseInt(searchParams.get('limit') || '10')
+    const status = searchParams.get('status') || ''
+    const isExport = searchParams.get('export') === 'true'
+
+    // Build where condition for filtering
+    const whereCondition: any = {}
+    if (status && status !== 'all') {
+      whereCondition.status = status.toUpperCase()
+    }
+
+    if (isExport) {
+      // For export, return all donations without pagination
+      const donations = await prisma.donation.findMany({
+        where: whereCondition,
+        include: {
+          campaign: {
+            select: {
+              title: true
+            }
+          }
+        },
+        orderBy: {
+          createdAt: 'desc'
+        }
+      })
+
+      return NextResponse.json({
+        success: true,
+        donations
+      })
+    }
+
+    // Calculate pagination
+    const skip = (page - 1) * limit
+
+    // Get total count for pagination
+    const total = await prisma.donation.count({
+      where: whereCondition
+    })
+
+    // Get paginated donations
     const donations = await prisma.donation.findMany({
+      where: whereCondition,
       include: {
         campaign: {
           select: {
@@ -19,12 +63,21 @@ export async function GET(request: NextRequest) {
       orderBy: {
         createdAt: 'desc'
       },
-      take: 100 // Limit to recent 100 donations
+      skip,
+      take: limit
     })
+
+    const totalPages = Math.ceil(total / limit)
 
     return NextResponse.json({
       success: true,
-      donations
+      donations,
+      pagination: {
+        total,
+        page,
+        limit,
+        totalPages
+      }
     })
   } catch (error) {
     console.error('Error fetching admin donations:', error)
